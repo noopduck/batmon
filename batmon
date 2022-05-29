@@ -1,0 +1,50 @@
+#!/bin/env python3
+
+from gi import require_version
+require_version('Gtk', '3.0')
+from gi.repository import Gtk, GObject
+
+import time
+import sys
+
+class Box(Gtk.Window):
+    def __init__(self):
+        Gtk.Window.__init__(self, title = "Batmon")
+        
+        self.box = Gtk.Box(spacing = 6)
+        self.add(self.box)
+       
+    def close(self, widget):
+        self.destroy()
+
+    def createButton(self, string):
+        self.ok = Gtk.Button(label = f"Charge batttery: {string}")
+        self.ok.connect("clicked", self.close)
+        self.box.pack_start(self.ok, True, True, 0)
+
+
+alert_percentage = int(sys.argv[1])
+triggered = False
+
+while True:
+    capacity = int(open("/sys/class/power_supply/BAT0/capacity", "r").read().strip())
+    status = open("/sys/class/power_supply/BAT0/status", "r").read().strip()
+    print(f"status: {status} capacity: {capacity}")
+
+    win = Box()
+
+    if status == "Charging":
+        time.sleep(5)
+        triggered = False # reset trigger
+        continue
+    if triggered == True:
+        time.sleep(5)
+        continue
+    if capacity <= alert_percentage:
+        win.connect("destroy", Gtk.main_quit)
+        win.createButton(capacity)
+        win.show_all()
+        Gtk.main()
+        triggered = True
+
+    time.sleep(5)
